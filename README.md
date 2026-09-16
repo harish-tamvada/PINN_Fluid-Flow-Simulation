@@ -114,7 +114,7 @@ Available: https://arxiv.org/abs/2308.08468
 [2] H. Xiao, J.-L. Wu, S. Laizet, and L. Duan, <br>
 "Flows over periodic hills of parameterized geometries: A dataset for data-driven turbulence modeling from direct simulations," 
 Computers & Fluids, vol. 200, 2020. <br>
-doi: 10.1016/j.compfluid.2020.104431
+doi: https://doi.org/10.1016/j.compfluid.2020.104431
 
 [3] R. McConkey, "Turbulence Modelling Using Machine Learning" <br>
 [Dataset], Kaggle, version 3. [Online]. <br>
