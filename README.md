@@ -68,27 +68,27 @@ factorization and Fourier feature mapping [1] were used to enhance the model.
 
 **Predicted vs. True $u^*$ Velocity Field**
 
-![Result 1](PINN_Figures\contour_u.png)
+![Result 1](PINN_Figures/contour_u.png)
 
 
 **Predicted vs. True $v^*$ Velocity Field**
 
-![Result 2](PINN_Figures\contour_v.png)
+![Result 2](PINN_Figures/contour_v.png)
 
 
 **Predicted vs. True $p^*$ Pressure Distribution**
 
-![Result 3](PINN_Figures\contour_p.png)
+![Result 3](PINN_Figures/contour_p.png)
 
 
 **Predicted vs. True $u^*$ Streamwise Distribution**
 
-![Result 3](PINN_Figures\profile_u.png)
+![Result 4](PINN_Figures/profile_u.png)
 
 
 **Predicted vs. True Error Plots**
 
-![Result 3](PINN_Figures\scatter_comparison.png)
+![Result 5](PINN_Figures/scatter_comparison.png)
 
 
 ## Requirements
