@@ -2,7 +2,7 @@
 
 This project implements a Physics-Informed Neural Network (PINN) in MATLAB to model 
 flows over periodic hills [2], using the Reynolds-Averaged Navier–Stokes (RANS) equations as the governing physics. 
-Rather than learning purely from data, the network is also trained to satisfy the underlying physics, allowing it 
+Rather than learning purely from data, the network is also trained to satisfy the underlying 2-D physics, allowing it 
 to generalize better with limited or noisy training data.
 
 ## Overview
@@ -15,22 +15,22 @@ to generalize better with limited or noisy training data.
             output that could minimize data loss without representing genuine flow physics).
 - **Governing equations:** 2D steady incompressible RANS
 - **Domain / geometry:**  Periodic hills of parameterized geometries [2]
-- **Outputs predicted:** velocity field (u, v), pressure (p) and a predicted kinematic viscosity ($\nu$)
+- **Outputs predicted:** velocity field (u, v), pressure (p)
 
 ## Project Structure
 
 | File | Description |
 |---|---|
-| `PHLL.m` | Main script - Loads training data, initialises the neural network and trains the PINN |
-| `modelLoss.m` | Overall model loss function called within PHLL.m |
-| `wallLoss.m` | Wall Boundary Layer loss function called within modelLoss.m |
+| `PHLL_PINN.m` | Main script - Loads training data, initialises the neural network and trains the PINN and exports trainedPINN.mat |
+| `modelLoss.m` | Overall model loss function called within PHLL_PINN.m |
+| `wallLoss.m` | Wall Boundary Condition loss function called within modelLoss.m |
 | `dataLoss.m` | DNS data loss function called within modelLoss.m |
 | `physicsResidualLoss.m` | Physics informed loss function within modelLoss.m |
-| `convertArray.mat` | Used to convert arrays into dlarrays, whilst also checking if a GPU is available, so it can use a gpuArray instead fo faster running |
+| `convertArray.mat` | Used to convert arrays into dlarrays, whilst also checking if a GPU is available, so it can use a gpuArray instead for faster running |
 | `fourierFeatures.mat` | Used to map the input coordiantes into high frequency signals to minimize spectral bias [1] |
 | `fcRWFLayer.mat` | Custom neural network layer that incorporates random weight factorizations (RWF) to improve performance [1] |
-| `buildNetwrok.mat` | Function to build the neural network using given hyperparameters |s
-| `filtered_data.mat` | DNS data [3] which is used to train the PINN. |
+| `buildNetwrok.mat` | Function to build the neural network using given hyperparameters |
+| `filtered_data.mat` | Filtered DNS data [3] which is used to train the PINN. |
 | `plotModelVsData.m` | Ploting script of the PINN vs DNS data to produce the figures given below |
 | `trainedPINN.mat` | Given trained PINN from which the data presented below is extracted from using plotModelvsData.m |
 | `PINN_Figures` | Folder containing .png and .fig of the figures seen below. PHLL_PINN.m stores the training loss figure and plotModelvsData.m stores the comparison plots here. |
@@ -39,7 +39,7 @@ to generalize better with limited or noisy training data.
 ## How to Run
 
 1. Clone or download this repository.
-2. Open MATLAB (tested on version [R2025a], requires Deep Learning Toolbox.
+2. Open MATLAB (tested on version [R2025a], requires Deep Learning Toolbox).
 3. Ensure `filtered_data.mat` is in the same folder as the scripts.
 4. Run the training script:
    ```matlab
@@ -50,7 +50,7 @@ to generalize better with limited or noisy training data.
    ```matlab
    plotModelVsData.m
    ```
-   Note: `trainedPINN.mat` contains a fully trained model ready to run `plotModelVsData.m`
+   Note: `trainedPINN.mat` already contains a fully trained model ready to run `plotModelVsData.m`
 
    This loads the trained model and generates the comparison plots shown below. The figures are stored in PINN_Figures as .png and.fig files.
 
@@ -60,7 +60,7 @@ The physics model is embedded into the training of the PINN as a loss function.
 There are three loss terms: the physics residual, the data residual (against the DNS data), 
 and the enforced wall boundary condition residual. The DNS Reynolds stresses were interpolated 
 to compute the spatial derivatives required for the physics residual, while automatic differentiation 
-was used to compute the velocity and pressure derivatives. The Adam optimizer was used to train the model, 
+was used to compute the velocity and pressure derivatives. The Adams optimizer was used to train the model, 
 with 5000 epochs found to be sufficient to produce reliable results. Techniques such as random weight 
 factorization and Fourier feature mapping [1] were used to enhance the model.
 
@@ -98,7 +98,7 @@ factorization and Fourier feature mapping [1] were used to enhance the model.
 
 ## Future Work
 
-- Addition of temproal weights [1]
+- Addition of temporal weights [1] to improve the performance of the training
 
 
 ## Acknowledgments
