@@ -10,6 +10,6 @@ function lossBC = wallLoss(net, Xwall, Ywall, B)
     vWall = pred(2,:);
     % no p wall boundary condition
     
-    % BC: u,v @ wall = 0
-    lossBC = mean(uWall.^2, 'all') + mean(vWall.^2, 'all');
+    % BC: u,v @ wall = 0. u BC is hearder to train so larger importance
+    lossBC = 3 * mean(uWall.^2, 'all') + mean(vWall.^2, 'all');
 end

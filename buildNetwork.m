@@ -16,10 +16,10 @@ function net = buildNetwork(inputDim, outputDim, layerSize, numBlocks, mu, sigma
     % Output Layer (prints to command line the network)
     layers = [layers
         fcRWFLayer(outputDim, layerSize, mu, sigma, "rwf_output")
-        ]
+        ];
     
     
-    net = dlnetwork(layers)
+    net = dlnetwork(layers);
     
     % Convert net to allow gpu usage (single data type and gpuarray)
     net = dlupdate(@single, net);

@@ -1,4 +1,4 @@
-function [lossPhysics, contRes, xMomRes, yMomRes] = physicsResidualLoss(net, X, Y, dUUdx, dUVdy, dUVdx, dVVdy, Re, scalers, B)
+function [lossPhysics, continuityRes, xMomentumRes, yMomentumRes, relRes] = physicsResidualLoss(net, X, Y, dUUdX, dUVdY, dUVdX, dVVdY, Re, scalers, B)
     % Steady, non-dimensional incompressible RANS residual:
     
     %   continuity:   du*/dx* + dv*/dy* = 0
@@ -40,12 +40,9 @@ function [lossPhysics, contRes, xMomRes, yMomRes] = physicsResidualLoss(net, X, 
     % 'EnableHigherDerivatives' + 'RetainData' on the u,v branches since we
     % differentiate du_dX, du_dY, dv_dX, dv_dY a second time below for the
     % viscous Laplacian term. Not needed for p (only used to first order).
-    du_dX = dlgradient(sum(u,'all'), X, 'EnableHigherDerivatives', true, 'RetainData', true);
-    du_dY = dlgradient(sum(u,'all'), Y, 'EnableHigherDerivatives', true, 'RetainData', true);
-    dv_dX = dlgradient(sum(v,'all'), X, 'EnableHigherDerivatives', true, 'RetainData', true);
-    dv_dY = dlgradient(sum(v,'all'), Y, 'EnableHigherDerivatives', true, 'RetainData', true);
-    dp_dX = dlgradient(sum(p,'all'), X, 'RetainData', true);
-    dp_dY = dlgradient(sum(p,'all'), Y, 'RetainData', true);
+  [du_dX, du_dY] = dlgradient(sum(u,'all'), X, Y, 'EnableHigherDerivatives', true, 'RetainData', true);
+  [dv_dX, dv_dY] = dlgradient(sum(v,'all'), X, Y, 'EnableHigherDerivatives', true, 'RetainData', true);
+  [dp_dX, dp_dY] = dlgradient(sum(p,'all'), X, Y, 'RetainData', true);
 
     % ---- second derivatives w.r.t. network coords (for the Laplacian) ----
     d2u_dX2 = dlgradient(sum(du_dX,'all'), X, 'RetainData', true);
@@ -59,6 +56,8 @@ function [lossPhysics, contRes, xMomRes, yMomRes] = physicsResidualLoss(net, X, 
     du_dx = du_dX * cX;   du_dy = du_dY * cY;
     dv_dx = dv_dX * cX;   dv_dy = dv_dY * cY;
     dp_dx = dp_dX * cX;   dp_dy = dp_dY * cY;
+    dUU_dx = dUUdX * cX;  dUV_dx = dUVdX * cX;
+    dUV_dy = dUVdY * cY;  dVV_dy = dVVdY * cY;
 
     lap_u = d2u_dX2 * (cX^2) + d2u_dY2 * (cY^2);
     lap_v = d2v_dX2 * (cX^2) + d2v_dY2 * (cY^2);
@@ -69,9 +68,19 @@ function [lossPhysics, contRes, xMomRes, yMomRes] = physicsResidualLoss(net, X, 
     % weights, no gradient flows into them (which is correct: they're data).
     contRes = du_dx + dv_dy;
 
-    xMomRes = u.*du_dx + v.*du_dy + dp_dx - invertRe*lap_u + dUUdx(:)' + dUVdy(:)';
-    yMomRes = u.*dv_dx + v.*dv_dy + dp_dy - invertRe*lap_v + dUVdx(:)' + dVVdy(:)';
+    xMomRes = u.*du_dx + v.*du_dy + dp_dx - invertRe*lap_u + dUU_dx(:)' + dUV_dy(:)';
+    yMomRes = u.*dv_dx + v.*dv_dy + dp_dy - invertRe*lap_v + dUV_dx(:)' + dVV_dy(:)';
 
-    lossPhysics = mean(contRes.^2, 'all') + mean(xMomRes.^2, 'all') + mean(yMomRes.^2, 'all');
+    %residualCals
+    continuityRes = mean(contRes.^2, 'all');
+    xMomentumRes = mean(xMomRes.^2, 'all');
+    yMomentumRes = mean(yMomRes.^2, 'all');
+
+    meanAbsDiv = mean(abs(contRes(:)));
+    meanAbsTerms = mean(abs(du_dx(:)) + abs(dv_dy(:)));
+    relRes = 100 * meanAbsDiv / meanAbsTerms; %convert to precent
+
+    % 5x cont residual importance
+    lossPhysics = 5*mean(contRes.^2, 'all') + mean(xMomRes.^2, 'all') + mean(yMomRes.^2, 'all');
 end
 

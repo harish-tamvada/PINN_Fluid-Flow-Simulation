@@ -1,4 +1,4 @@
-function lossData = dataLoss(net, X, Y, uTarget, vTarget, pTarget, B)
+function [lossData, lossU, lossV, lossP] = dataLoss(net, X, Y, uTarget, vTarget, pTarget, B)
 
     % net:      dlnetwork, 2 inputs 3 outputs
     % X, Y:     X,Y in network [-1,1] coords
@@ -17,8 +17,8 @@ function lossData = dataLoss(net, X, Y, uTarget, vTarget, pTarget, B)
     lossP = mean((pPred - pTarget).^2, 'all');
     
 
-    % Found v to be noisy and difficult to train so increased weight
-    lossData = lossU + 1.5 * lossV + lossP;
+    % Found u to be easiest to train
+    lossData = lossU + 2 * lossV + lossP;
 
 
 end

@@ -1,15 +1,14 @@
-clc; clear
+clc; clear;
 
 %% Loading the net, rebuilding it from .mat
-
 trained = load('trainedPINN.mat');
 
 %Rebuild net
 net = buildNetwork(trained.inputDim, trained.outputDim, trained.layerSize, trained.numBlocks, trained.mu, trained.sigma);
-net.Learnables = trained.learnables;   
+net.Learnables = trained.learnables_best;   
 
 %extract data etc
-data = trained.data;
+data = trained.valData;
 scalers = trained.scalers;
 B = trained.B;
 
@@ -23,21 +22,15 @@ end
 
 %% ---- Prepare data ----
 
-%X Y ready for training
-X = 2 * (data.Cx / scalers.H) / scalers.xmax  - 1;
-Y = 2 * (data.Cy / scalers.H) / scalers.ymax  - 1;
-
-X = convertArray(X);
-Y = convertArray(Y);
-
-%Ux Uy p uu uv vv ready for training
-Ub2 = scalers.Ub^2;
-uStar  = data.Ux / scalers.Ub;
-vStar  = data.Uy / scalers.Ub;
-pStar  = data.p  / Ub2;
+% validation dataset
+X = data.XVal;
+Y = data.YVal;
+uStar = data.uStarVal;
+vStar = data.vStarVal;
+pStar = data.pStarVal;
 
 XY = cat(1, X, Y);
-XYenc = dlarray(fourierFeatures(stripdims(XY), B), "CB");
+XYenc = dlarray(fourierFeatures(XY, B), "CB");
 pred = predict(net, XYenc);
 pred = double(gather(extractdata(pred)));
 
@@ -45,8 +38,9 @@ uPred = pred(1,:);
 vPred = pred(2,:);
 pPred = pred(3,:);
 
-xStar = data.Cx / scalers.H;
-yStar = data.Cy / scalers.H;
+% Convert back to xStar, yStar for plotting grid
+xStar = 0.5 * ((X + 1) * scalers.xmax);
+yStar = 0.5 * ((Y + 1) * scalers.ymax);
 
 %% ---- 1. Scatter: predicted vs. true ----
 figScatter = figure('Name', 'Predicted vs. True', 'Position', [100 100 1200 400]);
@@ -68,7 +62,7 @@ figContourP = plotContourComparison(xStar, yStar, pStar, pPred, 'p*');
 saveFigure(figContourP, outputDir, 'contour_p');
 
 %% ---- 3. Streamwise profiles at fixed x* locations ----
-xLocations = 0:1:8;
+xLocations = 0.5:1:8;
 figProfile = plotProfileComparison(xStar, yStar, uStar, uPred, xLocations, 'u*');
 saveFigure(figProfile, outputDir, 'profile_u');
 
@@ -147,29 +141,30 @@ end
 function fig = plotProfileComparison(xStar, yStar, trueVal, predVal, xLocations, fieldName)
     xStar = xStar(:); yStar = yStar(:);
     trueVal = trueVal(:); predVal = predVal(:);
- 
     fig = figure('Name', ['Profiles: ' fieldName], 'Position', [100 100 1400 400]);
     numLoc = numel(xLocations);
-    tol = 0.15;   % half-width of the x* slice band, in units of H
- 
+
+    % Build interpolants once (outside the loop)
+    Ftrue = scatteredInterpolant(xStar, yStar, trueVal, 'linear', 'none');
+    Fpred = scatteredInterpolant(xStar, yStar, predVal, 'linear', 'none');
+
     for i = 1:numLoc
         x0 = xLocations(i);
-        mask = abs(xStar - x0) < tol;
- 
-        if ~any(mask)
-            continue;
-        end
- 
-        yLocal = yStar(mask);
-        trueLocal = trueVal(mask);
-        predLocal = predVal(mask);
- 
-        [yLocalSorted, sortIdx] = sort(yLocal);
- 
+        x0 = max(x0, min(xStar)); % min(xStar) > 0, so avoids empty x* = 0 plot
+
+        % y-range actually present near this x0, to avoid extrapolating
+        nearMask = abs(xStar - x0) < 0.15;
+        if ~any(nearMask), continue; end
+        yq = linspace(min(yStar(nearMask)), max(yStar(nearMask)), 300).';
+        xq = x0 * ones(size(yq));
+
+        trueLine = Ftrue(xq, yq);
+        predLine = Fpred(xq, yq);
+
         subplot(1, numLoc, i);
-        plot(trueLocal(sortIdx), yLocalSorted, 'k-', 'LineWidth', 1.5); hold on;
-        plot(predLocal(sortIdx), yLocalSorted, 'r--', 'LineWidth', 1.5); hold off;
-        title(sprintf('x*=%d', x0));
+        plot(trueLine, yq, 'k-', 'LineWidth', 1.5); hold on;
+        plot(predLine, yq, 'r--', 'LineWidth', 1.5); hold off;
+        title(sprintf('x*=%.2f', x0));
         if i == 1
             ylabel('y*');
             legend('DNS', 'Predicted', 'Location', 'best');
